@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>채팅방</title>
+  <style>
+  body {
+    font-family: Arial;
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .chat-container {
+    background-color: white;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: black;
+  }
+
+  #chat {
+    height: 250px;
+    padding: 10px;
+    border: 1px solid #e0e0e0bb;
+    border-radius: 5px;
+    overflow-y: scroll;
+    background-color: #e0e0e0bb;
+    text-align: left;
+    margin-bottom: 10px;
+  }
+
+  #chat div {
+    background-color: #a8d0f0;
+    margin: 5px 0;
+    padding: 5px;
+    border-radius: 5px;
+  }
+
+  form {
+    text-align: left;
+  }
+
+  input[type="text"] {
+    width: 90%;
+    padding: 8px;
+    border: 1px solid #888;
+    border-radius: 5px;
+  }
+
+  button {
+    width: 200%;
+    padding: 8px;
+    background-color: #1a8afa;
+    color: white;
+    border: none;
+    border-radius: 5px;
+  }
+</style>
+
+</head>
+<body>
+  <div class="chat-container">
+    <h3>채팅방</h3>
+    <div id="chat"></div>
+
+    <form id="chatForm">
+    <table>
+      <tr>
+        <td><input id="nameInput" type="text" placeholder="이름" required></td>
+        <td><input id="messageInput" type="text" placeholder="메시지" required></td>
+        <td><button type="submit">보내기</button></td>
+      </tr>
+    </table>
+    </form>
+  </div>
+
+  <script>
+    var chatArea = document.getElementById('chat');
+    var chatForm = document.getElementById('chatForm');
+    var nameField = document.getElementById('nameInput');
+    var messageField = document.getElementById('messageInput');
+
+    function getCurrentTime() {
+      var now = new Date();
+      var hours = now.getHours();
+      var minutes = now.getMinutes();
+      if (hours < 10) hours = '0' + hours;
+      if (minutes < 10) minutes = '0' + minutes;
+      return hours + ':' + minutes;
+    }
+
+    function loadMessages() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/messages', true);
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          var messages = JSON.parse(xhr.responseText);
+          var messageHTML = '';
+          for (var i = 0; i < messages.length; i++) {
+            var msg = messages[i];
+            messageHTML += '<div>[' + msg.time + '] ' + msg.text + '</div>';
+          }
+          chatArea.innerHTML = messageHTML;
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+      };
+
+      xhr.send();
+    }
+
+    function sendMessage(messageToSend) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/messages', true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+          if (xhr.status == 200) {
+            messageField.value = '';
+            loadMessages();
+          } else {
+            alert('error');
+          }
+        }
+      };
+
+      xhr.send(JSON.stringify(messageToSend));
+    }
+
+    chatForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      var userName = nameField.value.trim();
+      var userMessage = messageField.value.trim();
+
+      if (userName == '' || userMessage == '') {
+        alert('이름과 메시지를 모두 입력해주세요.');
+        return;
+      }
+
+      var messageToSend = {
+        text: userName + ': ' + userMessage,
+        time: getCurrentTime()
+      };
+
+      sendMessage(messageToSend);
+    });
+
+    loadMessages();
+    setInterval(loadMessages, 2000);
+  </script>
+</body>
+</html>
